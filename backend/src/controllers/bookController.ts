@@ -5,7 +5,7 @@ import { ReadingStatus } from '../types';
 // ─── GET /api/books ──────────────────────────────────────
 export const getAllBooks = async (req: Request, res: Response) => {
   try {
-    const userId = "88ff3cc4-ffd3-4386-9b79-d6ffd855705e";
+    const userId = req.userId!;
 
     const { data: userBooks, error } = await supabase
       .from('user_books')
@@ -29,7 +29,7 @@ export const getAllBooks = async (req: Request, res: Response) => {
 export const addBook = async (req: Request, res: Response) => {
   try {
     const { googleBooksId, title, author, coverUrl, description, status } = req.body;
-    const userId = "88ff3cc4-ffd3-4386-9b79-d6ffd855705e";
+    const userId = req.userId!;
 
     // Validate
     if (!googleBooksId || !title || !author || !status) {
@@ -102,7 +102,7 @@ export const updateBookStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const userId = "88ff3cc4-ffd3-4386-9b79-d6ffd855705e";
+    const userId = req.userId!;
 
     if (!status) {
       return res.status(400).json({ error: 'Status is required' });
@@ -144,7 +144,7 @@ export const updateBookStatus = async (req: Request, res: Response) => {
 export const deleteBook = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = "88ff3cc4-ffd3-4386-9b79-d6ffd855705e";
+    const userId = req.userId!;
 
     // Verify ownership
     const { data: userBook } = await supabase
