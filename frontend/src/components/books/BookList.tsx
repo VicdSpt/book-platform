@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserBook, ReadingStatus } from '../../types';
+import type { UserBook, ReadingStatus } from '../../types';
 import BookCard from './BookCard';
 
 interface BookListProps {

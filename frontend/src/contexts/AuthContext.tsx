@@ -3,9 +3,9 @@ import React, {
   useContext,
   useState,
   useEffect,
-  ReactNode,
 } from "react";
-import { User } from "../types";
+import type { ReactNode } from "react";
+import type { User } from "../types";
 import { authService } from "../services/auth";
 
 // Define what the context provides

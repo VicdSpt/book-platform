@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserBook, ReadingStatus } from '../../types';
+import type { UserBook, ReadingStatus } from '../../types';
 
 interface BookCardProps {
   userBook: UserBook;
@@ -23,7 +23,7 @@ const BookCard: React.FC<BookCardProps> = ({ userBook, onStatusChange, onDelete 
 
       {/* Book Cover */}
       <img
-        src={book.coverUrl || '/placeholder.png'}
+        src={book.cover_url || '/placeholder.png'}
         alt={book.title}
         className="w-16 h-24 object-cover rounded-lg flex-shrink-0 bg-gray-100"
       />

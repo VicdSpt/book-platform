@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { googleBooksService } from '../../services/googleBooks';
 import { booksService } from '../../services/books';
-import { GoogleBook, UserBook, ReadingStatus } from '../../types';
+import type { GoogleBook, UserBook, ReadingStatus } from '../../types';
 
 interface BookSearchProps {
   onBookAdded: (book: UserBook) => void;
@@ -14,7 +14,7 @@ const BookSearch: React.FC<BookSearchProps> = ({ onBookAdded, existingBooks }) =
   const [searching, setSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [addingId, setAddingId] = useState<string | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Theory: Debouncing
   // Without debouncing: API called on every keystroke ("H", "Ha", "Har", "Harr"...)
@@ -70,7 +70,7 @@ const BookSearch: React.FC<BookSearchProps> = ({ onBookAdded, existingBooks }) =
 
   // Check if book is already in user's library
   const isBookAdded = (googleBookId: string): boolean => {
-    return existingBooks.some(ub => ub.book.googleBooksId === googleBookId);
+    return existingBooks.some(ub => ub.book.google_books_id === googleBookId);
   };
 
   return (

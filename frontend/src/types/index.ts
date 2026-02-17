@@ -7,21 +7,22 @@ export interface User {
 
 export interface Book {
   id: string;
-  googleBooksId: string;
+  google_books_id: string;
   title: string;
   author: string;
-  coverUrl?: string;
+  cover_url?: string;
   description?: string;
+  created_at: string;
 }
 
 export interface UserBook {
   id: string;
-  userId: string;
-  bookId: string;
+  user_id: string;
+  book_id: string;
   status: ReadingStatus;
-  createdAt: string;
-  updatedAt: string;
-  book: Book; // Included via Prisma's include
+  created_at: string;
+  updated_at: string;
+  book: Book;
 }
 
 export type ReadingStatus = 'READ' | 'READING' | 'TO_READ';
@@ -32,7 +33,6 @@ export interface AuthResponse {
   token: string;
 }
 
-// Google Books API response shape
 export interface GoogleBook {
   id: string;
   volumeInfo: {

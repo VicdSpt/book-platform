@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { GoogleBook } from '../types';
+import type { GoogleBook } from '../types';
 
 // Note: We use plain axios here (not our api instance)
 // because this goes to Google, not our backend

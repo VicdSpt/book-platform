@@ -1,5 +1,5 @@
 import api from './api';
-import { UserBook, ReadingStatus } from '../types';
+import type { UserBook, ReadingStatus } from '../types';
 
 export const booksService = {
   async getUserBooks(): Promise<UserBook[]> {

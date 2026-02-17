@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { booksService } from '../services/books';
-import { UserBook, ReadingStatus } from '../types';
+import type { UserBook, ReadingStatus } from '../types';
 import BookSearch from '../components/books/BookSearch';
 import BookList from '../components/books/BookList';
 
