@@ -1,140 +1,173 @@
-import { Request, Response } from "express";
-import { Book, UserBook, ReadingStatus } from "../types";
+import { Request, Response } from 'express';
+import { supabase } from '../lib/supabase';
+import { ReadingStatus } from '../types';
 
-// Temporary in-memory storage (will be replaced with database)
-let books: Book[] = [];
-let userBooks: UserBook[] = [];
+// ─── GET /api/books ──────────────────────────────────────
+export const getAllBooks = async (req: Request, res: Response) => {
+  try {
+    const userId = "88ff3cc4-ffd3-4386-9b79-d6ffd855705e";
 
-// GET /api/books - Get all user's books
-export const getAllBooks = (req: Request, res: Response) => {
-  // Later: get userId from authentication
-  const userId = "temp-user-id";
+    const { data: userBooks, error } = await supabase
+      .from('user_books')
+      .select(`
+        *,
+        book:books(*)
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
-  // Filter books for this user
-  const userBookList = userBooks.filter((ub) => ub.userId === userId);
+    if (error) throw error;
 
-  // Join with book details
-  const booksWithStatus = userBookList.map((ub) => {
-    const book = books.find((b) => b.id === ub.bookId);
-    return {
-      ...book,
-      ...ub,
-    };
-  });
-
-  res.json(booksWithStatus);
+    res.json(userBooks);
+  } catch (error) {
+    console.error('Error fetching books:', error);
+    res.status(500).json({ error: 'Failed to fetch books' });
+  }
 };
 
-// GET /api/books?status=reading - Get books by status
-export const getBooksByStatus = (req: Request, res: Response) => {
-  const { status } = req.query;
-  const userId = "temp-user-id";
+// ─── POST /api/books ─────────────────────────────────────
+export const addBook = async (req: Request, res: Response) => {
+  try {
+    const { googleBooksId, title, author, coverUrl, description, status } = req.body;
+    const userId = "88ff3cc4-ffd3-4386-9b79-d6ffd855705e";
 
-  // Filter by status if provided
-  let filtered = userBooks.filter((ub) => ub.userId === userId);
-  if (status) {
-    filtered = filtered.filter((ub) => ub.status === status);
+    // Validate
+    if (!googleBooksId || !title || !author || !status) {
+      return res.status(400).json({
+        error: 'Missing required fields: googleBooksId, title, author, status'
+      });
+    }
+
+    // Find or create book
+    let { data: book } = await supabase
+      .from('books')
+      .select('*')
+      .eq('google_books_id', googleBooksId)
+      .single();
+
+    if (!book) {
+      const { data: newBook, error } = await supabase
+        .from('books')
+        .insert({
+          google_books_id: googleBooksId,
+          title,
+          author,
+          cover_url: coverUrl,
+          description
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      book = newBook;
+    }
+
+    // Check if user already has this book
+    const { data: existing } = await supabase
+      .from('user_books')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('book_id', book.id)
+      .single();
+
+    if (existing) {
+      return res.status(400).json({ error: 'Book already in your library' });
+    }
+
+    // Add to user's library
+    const { data: userBook, error: insertError } = await supabase
+      .from('user_books')
+      .insert({
+        user_id: userId,
+        book_id: book.id,
+        status: status as ReadingStatus
+      })
+      .select(`
+        *,
+        book:books(*)
+      `)
+      .single();
+
+    if (insertError) throw insertError;
+
+    res.status(201).json(userBook);
+  } catch (error) {
+    console.error('Error adding book:', error);
+    res.status(500).json({ error: 'Failed to add book' });
   }
-
-  const booksWithStatus = filtered.map((ub) => {
-    const book = books.find((b) => b.id === ub.bookId);
-    return { ...book, ...ub };
-  });
-
-  res.json(booksWithStatus);
 };
 
-// POST /api/books - Add a book to user's list
-export const addBook = (req: Request, res: Response) => {
-  const { googleBooksId, title, author, coverUrl, description, status } =
-    req.body;
-  const userId = "temp-user-id";
+// ─── PUT /api/books/:id ──────────────────────────────────
+export const updateBookStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const userId = "88ff3cc4-ffd3-4386-9b79-d6ffd855705e";
 
-  // Validate required fields
-  if (!title || !author || !status) {
-    return res.status(400).json({
-      error: "Missing required fields: title, author, status",
-    });
+    if (!status) {
+      return res.status(400).json({ error: 'Status is required' });
+    }
+
+    // Verify ownership
+    const { data: userBook } = await supabase
+      .from('user_books')
+      .select('id')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .single();
+
+    if (!userBook) {
+      return res.status(404).json({ error: 'Book not found' });
+    }
+
+    // Update status
+    const { data: updated, error } = await supabase
+      .from('user_books')
+      .update({ status: status as ReadingStatus })
+      .eq('id', id)
+      .select(`
+        *,
+        book:books(*)
+      `)
+      .single();
+
+    if (error) throw error;
+
+    res.json(updated);
+  } catch (error) {
+    console.error('Error updating book:', error);
+    res.status(500).json({ error: 'Failed to update book status' });
   }
-
-  // Check if book already exists
-  let book = books.find((b) => b.googleBooksId === googleBooksId);
-
-  if (!book) {
-    // Create new book
-    book = {
-      id: `book-${Date.now()}`,
-      googleBooksId,
-      title,
-      author,
-      coverUrl,
-      description,
-    };
-    books.push(book);
-  }
-
-  // Check if user already has this book
-  const existingUserBook = userBooks.find(
-    (ub) => ub.userId === userId && ub.bookId === book!.id,
-  );
-
-  if (existingUserBook) {
-    return res.status(400).json({
-      error: "Book already in your library",
-    });
-  }
-
-  // Create user-book relationship
-  const userBook: UserBook = {
-    id: `ub-${Date.now()}`,
-    userId,
-    bookId: book.id,
-    status: status as ReadingStatus,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
-  userBooks.push(userBook);
-
-  res.status(201).json({ ...book, ...userBook });
 };
 
-// PUT /api/books/:id - Update book status
-export const updateBookStatus = (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { status } = req.body;
-  const userId = "temp-user-id";
+// ─── DELETE /api/books/:id ───────────────────────────────
+export const deleteBook = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = "88ff3cc4-ffd3-4386-9b79-d6ffd855705e";
 
-  if (!status) {
-    return res.status(400).json({ error: "Status is required" });
+    // Verify ownership
+    const { data: userBook } = await supabase
+      .from('user_books')
+      .select('id')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .single();
+
+    if (!userBook) {
+      return res.status(404).json({ error: 'Book not found' });
+    }
+
+    const { error } = await supabase
+      .from('user_books')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting book:', error);
+    res.status(500).json({ error: 'Failed to delete book' });
   }
-
-  const userBook = userBooks.find((ub) => ub.id === id && ub.userId === userId);
-
-  if (!userBook) {
-    return res.status(404).json({ error: "Book not found" });
-  }
-
-  userBook.status = status as ReadingStatus;
-  userBook.updatedAt = new Date();
-
-  const book = books.find((b) => b.id === userBook.bookId);
-  res.json({ ...book, ...userBook });
-};
-
-// DELETE /api/books/:id - Remove book from user's list
-export const deleteBook = (req: Request, res: Response) => {
-  const { id } = req.params;
-  const userId = "temp-user-id";
-
-  const index = userBooks.findIndex(
-    (ub) => ub.id === id && ub.userId === userId,
-  );
-
-  if (index === -1) {
-    return res.status(404).json({ error: "Book not found" });
-  }
-
-  userBooks.splice(index, 1);
-  res.status(204).send(); // 204 = No Content (successful deletion)
 };
