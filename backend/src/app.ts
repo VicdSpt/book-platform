@@ -6,7 +6,6 @@ import bookRoutes from './routes/bookRoutes';
 const app: Application = express();
 
 // ─── Middleware ───────────────────────────────────────────
-app.use(cors());
 app.use(express.json());
 
 app.use(cors({

@@ -5,7 +5,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
 export const authenticate = (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Check Authorization header
+    // Get token from header
     const authHeader = req.headers.authorization;
 
     // Header format must be: "Bearer <token>"
